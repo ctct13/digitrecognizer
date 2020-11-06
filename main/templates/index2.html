@@ -1,0 +1,145 @@
+
+<!-- draw canvas -->
+<canvas
+          id="canvas"
+          width="280"
+          height="280"
+          style="border:2px solid; float: left; border-radius: 5px; cursor: crosshair;"
+        ></canvas>
+<p id="result" class="text-center text-success"></p>
+<a href="#" class="btn btn-success btn-block p-2"  id="predictButton">
+            Predict
+</a>
+
+<input
+        type="button"
+        class="btn btn-block btn-secondary p-2"
+        id="clearButton"
+        value="Clear"
+ />
+
+ 
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+
+{% block javascript %}
+
+<script type="text/javascript">
+//wait for the content of the window element 
+// to load, then performs the operations. 
+// This is considered best practice. 
+
+
+window.addEventListener('load', ()=>{ 
+        
+    //resize(); // Resizes the canvas once the window loads 
+    document.addEventListener('mousedown', startPainting); 
+    document.addEventListener('mouseup', stopPainting); 
+    document.addEventListener('mousemove', sketch); 
+    //window.addEventListener('resize', resize); 
+}); 
+    
+const canvas = document.querySelector('#canvas'); 
+   
+// Context for the canvas for 2 dimensional operations 
+const ctx = canvas.getContext('2d'); 
+    
+// Resizes the canvas to the available size of the window. 
+//function resize(){ 
+//  ctx.canvas.width = window.innerWidth/2; 
+//  ctx.canvas.height = window.innerHeight/2; 
+//} 
+    
+// Stores the initial position of the cursor 
+let coord = {x:0 , y:0};  
+   
+// This is the flag that we are going to use to  
+// trigger drawing 
+let paint = false; 
+    
+// Updates the coordianates of the cursor when  
+// an event e is triggered to the coordinates where  
+// the said event is triggered. 
+function getPosition(event){ 
+  coord.x = event.clientX - canvas.offsetLeft; 
+  coord.y = event.clientY - canvas.offsetTop; 
+} 
+  
+// The following functions toggle the flag to start 
+// and stop drawing 
+function startPainting(event){ 
+  paint = true; 
+  getPosition(event); 
+} 
+function stopPainting(){ 
+  paint = false; 
+} 
+    
+function sketch(event){ 
+  if (!paint) return; 
+  ctx.beginPath(); 
+    
+  ctx.lineWidth = 15; 
+  ctx.filter = "blur(2px)";
+   
+  // Sets the end of the lines drawn 
+  // to a round shape. 
+  ctx.lineCap = 'round'; 
+    
+  ctx.strokeStyle = 'black'; 
+      
+  // The cursor to start drawing 
+  // moves to this coordinate 
+  ctx.moveTo(coord.x, coord.y); 
+   
+  // The position of the cursor 
+  // gets updated as we move the 
+  // mouse around. 
+  getPosition(event); 
+   
+  // A line is traced from start 
+  // coordinate to this coordinate 
+  ctx.lineTo(coord.x , coord.y); 
+    
+  // Draws the line. 
+  ctx.stroke(); 
+  
+  document.getElementById('clearButton').addEventListener('click', function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, false);
+} 
+</script>
+
+
+<script type="text/javascript">
+      $("#predictButton").click(function() {
+        var $SCRIPT_ROOT = "/api/predict/";
+        var canvasObj = document.getElementById("canvas");
+        var context = canvas.getContext( "2d" );
+        var img = canvasObj.toDataURL();
+        
+        $.ajax({
+          type: "POST",
+          url: $SCRIPT_ROOT,
+          dataType: "json",
+          data: { img: img , csrfmiddlewaretoken: '{{ csrf_token }}'},
+          success: function(data) {
+            
+            var obj = JSON.stringify(data);
+            $("#result").text("Predicted Output is: " + obj[11]) ;
+            
+            context.clearRect( 0, 0, 280, 280 );
+            context.fillStyle="white";
+            context.fillRect(0,0,canvas.width,canvas.height);
+            },
+          error: function (response) {
+                // alert the error if any error occured
+                alert(response["responseJSON"]["error"]);}
+        });
+      });
+    </script>
+{% endblock javascript %}
